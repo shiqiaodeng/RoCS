@@ -15,4 +15,6 @@ CUDA_VISIBLE_DEVICES=0 python -u codes/run.py --do_train \
 ```
 
 ### Test
+```
 bash run.sh train RoCS FB15k 1 0 1024 256 1000 12.0 30 1 0.00001 150000 16 -de
+```
