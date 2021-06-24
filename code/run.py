@@ -68,7 +68,6 @@ def parse_args(args=None):
     parser.add_argument('--nentity', type=int, default=0, help='DO NOT MANUALLY SET')
     parser.add_argument('--nrelation', type=int, default=0, help='DO NOT MANUALLY SET')
     
-    # 新增参数
     parser.add_argument('-u', '--u', default=50, type=int)
 
     return parser.parse_args(args)

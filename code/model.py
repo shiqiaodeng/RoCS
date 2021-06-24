@@ -159,7 +159,6 @@ class KGEModel(nn.Module):
             'ComplEx': self.ComplEx,
             'RotatE': self.RotatE,
             'pRotatE': self.pRotatE,
-            'ReCS': self.ReCS,
             'RoCS': self.RoCS,
             'RoReCS': self.RoReCS,
             'RoAddCS': self.RoAddCS,
@@ -257,63 +256,35 @@ class KGEModel(nn.Module):
         score = self.gamma.item() - score.sum(dim = 2) * self.modulus
         return score
 
-    # 新增模型
-    def ReCS(self, head, relation, tail, mode):
-        '''
-        使用余弦相似度作为平移模型得分函数
-        '''
-        if mode == 'head-batch':
-            rt = relation + tail
-            score = torch.cosine_similarity(head, rt, dim=2)
-        else:
-            ht = head + relation
-            score =  torch.cosine_similarity(ht, tail, dim=2)
-
-        score = self.u * score                   # 扩展超参数u，余弦结果在[-u, u],值越大说明二者越相似。
-        score = self.gamma - score       # 方法系数
-        
-        return score
     def RoCS(self, head, relation, tail, mode):
-        '''
-        使用联合余弦相似度作为旋转模型得分函数
-        '''
         pi = 3.14159265358979323846
 
         re_head, im_head = torch.chunk(head, 2, dim=2)
         re_tail, im_tail = torch.chunk(tail, 2, dim=2)
 
-        # Make phases of relations uniformly distributed in [-pi, pi]
+        phase_relation = relation / (self.embedding_range.item() / pi)      
 
-        phase_relation = relation / (self.embedding_range.item() / pi)      # 生成关系嵌入
-
-        re_relation = torch.cos(phase_relation)     # 欧拉公式：e(ix) = cos x + i sin(x)
+        re_relation = torch.cos(phase_relation)     
         im_relation = torch.sin(phase_relation)
 
         if mode == 'head-batch':
-            # 复数向量乘法，(a +bi)*(c+di)=(ac -bd) + (ad + bc)i
-            re_rt = re_relation * re_tail + im_relation * im_tail  # 复数向量乘法，r*t
+            re_rt = re_relation * re_tail + im_relation * im_tail  
             im_rt = re_relation * im_tail - im_relation * re_tail
-            rt = torch.cat([re_rt, im_rt], dim=2)                  # 将复向量C^n 转为实向量R^2n 比较余弦相似度
-            score = torch.cosine_similarity(rt, head, dim=2)       # 计算复数向量r*t 与head 余弦相似度
-
+            rt = torch.cat([re_rt, im_rt], dim=2)                  
+            score = torch.cosine_similarity(rt, head, dim=2)       
         else:
-            re_hr = re_head * re_relation - im_head * im_relation  # 复数向量乘法，h*r
+            re_hr = re_head * re_relation - im_head * im_relation  
             im_hr = re_head * im_relation + im_head * re_relation
 
-            hr = torch.cat([re_hr, im_hr], dim=2)  # 将复向量C^n 转为实向量R^2n 比较余弦相似度
-            score = torch.cosine_similarity(hr, tail, dim=2)  # 计算复数向量h*r 与t 余弦相似度
-
-        score = self.u * score                   # 扩展超参数u，余弦结果在[-u, u],值越大说明二者越相似。
-        score = self.gamma - score       # 方法系数
-
-        return score
+            hr = torch.cat([re_hr, im_hr], dim=2)  
+            score = torch.cosine_similarity(hr, tail, dim=2)  
+        score = self.u * score                   
+        score = self.gamma - score       
 
         return score
 
     def RoReCS(self, head, relation, tail, mode):
-        '''
-        RoReCS模型，类似ComplEx模型只考虑实部结果，舍弃虚部结果
-        '''
+
         pi = 3.14159265358979323846
         
         re_head, im_head = torch.chunk(head, 2, dim=2)
@@ -336,15 +307,12 @@ class KGEModel(nn.Module):
             im_hr = re_head * im_relation + im_head * re_relation
             score = self.ComplexCosine(re_hr, im_hr, re_tail, im_tail)
         
-        score = self.u * score                   # 扩展超参数u，余弦结果在[-u, u],值越大说明二者越相似。
-        score = self.gamma - score       # 方法系数
+        score = self.u * score                  
+        score = self.gamma - score      
 
         return score
 
     def RoAddCS(self, head, relation, tail, mode):
-        '''
-        RoAddCS模型，分别计算实体与关系嵌入的实部余弦相似度与虚部余弦相似度，再进行相加
-        '''
         pi = 3.14159265358979323846
         
         re_head, im_head = torch.chunk(head, 2, dim=2)
@@ -371,17 +339,14 @@ class KGEModel(nn.Module):
         
         score = re_score + im_score
 
-        score = self.u * score                   # 扩展超参数u，余弦结果在[-u, u],值越大说明二者越相似。
-        score = self.gamma - score       # 方法系数
+        score = self.u * score                   
+        score = self.gamma - score   
 
         return score
 
 
     @staticmethod
     def ComplexCosine(re_x, im_x, re_y, im_y):
-        '''
-        计算复数向量余弦相似度
-        '''
         real_dot = re_x * re_y - im_x * im_y
         # imag_dot = re_x * im_y + im_x * re_y
         real_dot = real_dot.sum(dim = 2)
