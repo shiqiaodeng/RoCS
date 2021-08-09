@@ -11,7 +11,7 @@ CUDA_VISIBLE_DEVICES=0 python -u codes/run.py --do_train \
  -n 256 -b 1024 -d 1000 \
  -g 24.0 -a 1.0 -u 30 -adv \
  -lr 0.00001 --max_steps 150000 \
- -save models/RotatE_FB15k_0 --test_batch_size 16 -de
+ -save models/RoCS_FB15k_0 --test_batch_size 16 -de
 ```
 
 ### Test
