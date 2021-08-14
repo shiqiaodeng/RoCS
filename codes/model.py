@@ -33,8 +33,7 @@ class KGEModel(nn.Module):
             requires_grad=False
         )
         
-         # 新增超参数
-        self.u = nn.Parameter(  # 间隔
+        self.u = nn.Parameter(  
             torch.Tensor([u]),
             requires_grad=False
         )
