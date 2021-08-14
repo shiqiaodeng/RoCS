@@ -1,4 +1,4 @@
-# RoCS: A rotational embedding model for knowledge graphs based on joint cosine similarity
+# RoCS: Knowledge Graph Embedding Based on Joint Cosine Similarity
 
 ### Train
 ```
